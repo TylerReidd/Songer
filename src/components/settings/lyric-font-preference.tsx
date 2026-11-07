@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import type { LyricFont } from "@/lib/domain/types";
+import { updateLyricFont } from "@/lib/settings/actions";
 import { cn } from "@/lib/utils";
 
 const OPTIONS: Array<{ value: LyricFont; label: string; sample: string; className: string }> = [
@@ -13,11 +14,12 @@ const OPTIONS: Array<{ value: LyricFont; label: string; sample: string; classNam
 
 /**
  * Applies the preference immediately by flipping the data attribute that the
- * `.lyric-text` rule in globals.css reads. Phase 2 also persists it on the
- * user record so it follows them across devices.
+ * `.lyric-text` rule in globals.css reads, then persists it on the user
+ * record so it follows them across devices.
  */
 export function LyricFontPreference({ initial }: { initial: LyricFont }) {
   const [value, setValue] = useState<LyricFont>(initial);
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     document.documentElement.dataset.lyricFont = value;
@@ -40,8 +42,10 @@ export function LyricFontPreference({ initial }: { initial: LyricFont }) {
                 checked={selected}
                 onChange={() => {
                   setValue(option.value);
-                  toast(`Lyric font set to ${option.label.toLowerCase()}`, {
-                    description: "Applied for this session. Saving preferences arrives in Phase 2.",
+                  startTransition(async () => {
+                    const result = await updateLyricFont(option.value);
+                    if (result.ok) toast.success(`Lyric font set to ${option.label.toLowerCase()}`);
+                    else toast.error(result.message);
                   });
                 }}
                 className="peer sr-only"

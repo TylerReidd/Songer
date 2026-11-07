@@ -73,3 +73,29 @@ export function useUnsavedChangesWarning(active: boolean) {
     return () => window.removeEventListener("beforeunload", handler);
   }, [active]);
 }
+
+/**
+ * Sends the latest document with `navigator.sendBeacon` when the page is
+ * being hidden or unloaded while edits are pending. Beacons survive tab
+ * close, which a normal fetch or Server Action would not. The payload is
+ * built at send time so it reflects the final state.
+ */
+export function useFlushOnHide(active: boolean, getRequest: () => { url: string; body: unknown }) {
+  const send = useEffectEvent(() => {
+    const { url, body } = getRequest();
+    navigator.sendBeacon(url, new Blob([JSON.stringify(body)], { type: "application/json" }));
+  });
+
+  useEffect(() => {
+    if (!active) return;
+    const onHide = () => {
+      if (document.visibilityState === "hidden") send();
+    };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", send);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", send);
+    };
+  }, [active]);
+}

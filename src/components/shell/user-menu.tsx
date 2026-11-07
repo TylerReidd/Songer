@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
-import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { signOut } from "@/lib/auth-client";
 import type { UserProfile } from "@/lib/domain/types";
 
 function initials(name: string | null, email: string): string {
@@ -24,6 +25,8 @@ function initials(name: string | null, email: string): string {
 }
 
 export function UserMenu({ user }: { user: UserProfile }) {
+  const router = useRouter();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -56,7 +59,11 @@ export function UserMenu({ user }: { user: UserProfile }) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem
-          onSelect={() => toast("Sign out arrives with authentication in Phase 2.")}
+          onSelect={async () => {
+            await signOut();
+            router.push("/");
+            router.refresh();
+          }}
         >
           <LogOut aria-hidden="true" />
           Sign out

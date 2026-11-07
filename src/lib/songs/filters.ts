@@ -37,7 +37,11 @@ export interface LibraryFilters {
   favoritesOnly: boolean;
   sort: LibrarySort;
   view: LibraryView;
+  /** 1-based page number. Offset paging is plenty at a personal library's scale. */
+  page: number;
 }
+
+export const LIBRARY_PAGE_SIZE = 30;
 
 export const DEFAULT_LIBRARY_FILTERS: LibraryFilters = {
   query: "",
@@ -45,6 +49,7 @@ export const DEFAULT_LIBRARY_FILTERS: LibraryFilters = {
   favoritesOnly: false,
   sort: "updated",
   view: "grid",
+  page: 1,
 };
 
 type SearchParamsLike = Record<string, string | string[] | undefined>;
@@ -61,7 +66,9 @@ export function parseLibraryFilters(params: SearchParamsLike): LibraryFilters {
   const status = first(params.status) ?? "";
   const sort = first(params.sort) ?? "";
   const view = first(params.view) ?? "";
+  const page = Number.parseInt(first(params.page) ?? "1", 10);
   return {
+    page: Number.isInteger(page) && page > 0 ? page : 1,
     query: (first(params.q) ?? "").trim().slice(0, 100),
     status: isSongStatus(status) ? status : "ACTIVE",
     favoritesOnly: first(params.favorite) === "1",
@@ -82,6 +89,7 @@ export function libraryFiltersToSearchParams(filters: LibraryFilters): URLSearch
   if (filters.favoritesOnly) params.set("favorite", "1");
   if (filters.sort !== DEFAULT_LIBRARY_FILTERS.sort) params.set("sort", filters.sort);
   if (filters.view !== DEFAULT_LIBRARY_FILTERS.view) params.set("view", filters.view);
+  if (filters.page > 1) params.set("page", String(filters.page));
   return params;
 }
 

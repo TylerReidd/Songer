@@ -1,16 +1,14 @@
 "use client";
 
 import { Menu } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 import { Logo } from "@/components/shared/logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import type { UserProfile } from "@/lib/domain/types";
 import { SidebarNav, SidebarNavFallback } from "./sidebar-nav";
-import { UserMenu } from "./user-menu";
 
 /** Top bar with a slide-in navigation drawer, shown below the lg breakpoint. */
-export function MobileNav({ user }: { user: UserProfile }) {
+export function MobileNav({ userSlot }: { userSlot: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
     <header className="flex h-14 items-center justify-between border-b bg-sidebar px-4 lg:hidden">
@@ -32,9 +30,7 @@ export function MobileNav({ user }: { user: UserProfile }) {
                 <SidebarNav onNavigate={() => setOpen(false)} />
               </Suspense>
             </div>
-            <div className="border-t border-sidebar-border p-3">
-              <UserMenu user={user} />
-            </div>
+            <div className="border-t border-sidebar-border p-3">{userSlot}</div>
           </div>
         </SheetContent>
       </Sheet>

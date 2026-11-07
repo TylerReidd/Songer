@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Link2, MoreHorizontal, Music2, PenLine, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -40,7 +40,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { RelativeTime } from "@/components/shared/relative-time";
+import type { ActionResult } from "@/lib/domain/action-result";
 import type { Idea } from "@/lib/domain/types";
+import { attachIdea, convertIdeaToSong, deleteIdea, updateIdea } from "@/lib/ideas/actions";
 
 export interface SongOption {
   id: string;
@@ -59,9 +61,16 @@ export function IdeaCard({ idea, songs }: IdeaCardProps) {
   const [draft, setDraft] = useState(idea.content);
   const [targetSong, setTargetSong] = useState(idea.songId ?? "");
 
+  const [pending, startTransition] = useTransition();
   const attachedSong = songs.find((song) => song.id === idea.songId);
-  const notPersisted = (message: string) =>
-    toast(message, { description: "Ideas are not saved while Songbook runs on sample data." });
+
+  function run(work: () => Promise<ActionResult<unknown>>, success: string) {
+    startTransition(async () => {
+      const result = await work();
+      if (result.ok) toast.success(success);
+      else toast.error(result.message);
+    });
+  }
 
   return (
     <article className="group flex flex-col rounded-xl border bg-surface-elevated p-4">
@@ -74,7 +83,7 @@ export function IdeaCard({ idea, songs }: IdeaCardProps) {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label="Idea actions" className="-mt-1 -mr-1">
+            <Button variant="ghost" size="icon-sm" aria-label="Idea actions" className="-mt-1 -mr-1" disabled={pending}>
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>
@@ -83,7 +92,7 @@ export function IdeaCard({ idea, songs }: IdeaCardProps) {
               <PenLine aria-hidden="true" />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => notPersisted("Converted to a new song")}>
+            <DropdownMenuItem onSelect={() => startTransition(async () => { await convertIdeaToSong(idea.id); })}>
               <Music2 aria-hidden="true" />
               Convert to song
             </DropdownMenuItem>
@@ -122,7 +131,7 @@ export function IdeaCard({ idea, songs }: IdeaCardProps) {
             onSubmit={(event) => {
               event.preventDefault();
               setEditOpen(false);
-              notPersisted("Idea updated");
+              run(() => updateIdea(idea.id, { title: idea.title, content: draft }), "Idea updated");
             }}
             className="flex flex-col gap-4"
           >
@@ -157,7 +166,10 @@ export function IdeaCard({ idea, songs }: IdeaCardProps) {
               event.preventDefault();
               setAttachOpen(false);
               const chosen = songs.find((song) => song.id === targetSong);
-              notPersisted(chosen ? `Attached to “${chosen.title}”` : "Detached from song");
+              run(
+                () => attachIdea(idea.id, chosen?.id ?? null),
+                chosen ? `Attached to “${chosen.title}”` : "Detached from song",
+              );
             }}
             className="flex flex-col gap-4"
           >
@@ -195,7 +207,7 @@ export function IdeaCard({ idea, songs }: IdeaCardProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={() => notPersisted("Idea deleted")}>
+            <AlertDialogAction variant="destructive" onClick={() => run(() => deleteIdea(idea.id), "Idea deleted")}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

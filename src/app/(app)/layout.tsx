@@ -1,12 +1,14 @@
 import { AppShell } from "@/components/shell/app-shell";
-import { getCurrentUser } from "@/lib/data";
 
 /**
- * Layout for every authenticated route. In Phase 2 this is where the session
- * is read and anonymous visitors are redirected; today it loads the sample
- * user so the shell can render.
+ * Layout for every authenticated route.
+ *
+ * Deliberately does NOT read the session here. Under Cache Components a
+ * top-level session read in a layout would hold every child page behind the
+ * request. Instead the shell is static, the account menu streams in behind
+ * its own Suspense boundary (see Sidebar), and each page calls requireUser()
+ * behind its loading.tsx boundary.
  */
-export default async function AppLayout({ children }: LayoutProps<"/">) {
-  const user = await getCurrentUser();
-  return <AppShell user={user}>{children}</AppShell>;
+export default function AppLayout({ children }: LayoutProps<"/">) {
+  return <AppShell>{children}</AppShell>;
 }

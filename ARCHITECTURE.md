@@ -13,8 +13,8 @@ components that hold interactive state run in the browser.
 Browser ──► Next.js (Vercel) ──► Server Components / Server Actions ──► Prisma ──► PostgreSQL
 ```
 
-Phase 1 (current) runs on in-memory sample data behind the same data access
-interface that Prisma will implement in Phase 2.
+Reads happen in Server Components through small query modules; writes go
+through Server Actions that validate with Zod and scope every query by owner.
 
 ## Directory layout
 
@@ -36,11 +36,25 @@ src/
     songs/ ideas/ dashboard/ settings/ marketing/ shared/
   lib/
     domain/types.ts         Shared domain types and constants
-    data/                   Data access layer (mock now, Prisma next)
+    db.ts                   Prisma client (singleton, pg driver adapter)
+    auth.ts / auth-client.ts  Better Auth server instance and browser client
+    session.ts              requireUser(): the Data Access Layer entry point
+    songs/queries.ts        Reads (always scoped by userId)
+    songs/actions.ts        Server Actions: create, patch, delete, save document
+    ideas/, dashboard/, settings/   Same split per feature
+    validation/             Zod schemas for every action input and the snapshot JSON
+    demo/                   Sample content, seeding, "Try the demo"
     songs/filters.ts        Library filter model (URL <-> typed filters)
     songs/ordering.ts       Pure section-ordering helpers
-    format.ts               Date / text helpers
-  hooks/use-autosave.ts     Debounced single-flight autosave
+    songs/save-document.ts  The autosave transaction (shared by action and flush route)
+    music/chords.ts         Chord names, voicings, diatonic suggestions (pure)
+    music/piano.ts          Web Audio piano synth
+  hooks/use-autosave.ts     Debounced single-flight autosave + tab-close flush
+  hooks/use-chord-player.ts Lookahead scheduler for chord playback
+  proxy.ts                  Cookie-presence redirect (not the security boundary)
+prisma/                     schema, migrations, seed
+tests/integration/          Ownership and versioning tests against real PostgreSQL
+tests/e2e/                  Playwright: sign-up, write, chords, versions, isolation
 ```
 
 Route groups in parentheses, such as `(app)`, group routes under a shared
@@ -98,14 +112,29 @@ Phase 2 mirrors them one to one.
 - The dashboard activity feed derives from `updatedAt` timestamps rather than
   an activity table.
 
-## Authorization approach (Phase 2)
+## Authentication and authorization
 
-- Better Auth with email/password; sessions in PostgreSQL.
-- A thin `proxy.ts` redirects anonymous visitors. It is a convenience, not the
-  security boundary.
-- `requireUser()` runs at the top of every protected page and Server Action.
+- Better Auth with email/password; sessions and accounts live in PostgreSQL
+  via the Prisma adapter. The browser talks to `/api/auth/*` through Better
+  Auth's React client; the Route Handler at `app/api/auth/[...all]` mounts it.
+- `proxy.ts` (Next 16's name for middleware) redirects anonymous visitors
+  based on cookie presence only. It is a convenience, not the security boundary.
+- `requireUser()` in `lib/session.ts` validates the session against the
+  database and is called at the top of every protected page and Server
+  Action. It is wrapped in React `cache()` so a page and its children share
+  one lookup per request.
+- Under Cache Components a session read must sit behind Suspense, so the
+  `(app)` layout never reads it. The account menu is an async Server Component
+  inside its own boundary, and each page reads the session behind its
+  `loading.tsx`.
 - Data access functions take `userId` explicitly and include it in the `where`
-  clause. There is no code path that reads a song without an owner filter.
+  clause. Mutations use `updateMany`/`deleteMany` with `{ id, ownerId }` and
+  treat zero affected rows as "not found". There is no code path that touches
+  a song without an owner filter. `tests/integration/ownership.test.ts`
+  proves this against the real database.
+- "Try the demo" creates an isolated throwaway account flagged `isDemo`;
+  `/api/cron/cleanup-demo` (Vercel Cron, bearer-secret protected) deletes
+  them after 24 hours and cascades remove their content.
 
 ## Autosave strategy
 
@@ -119,16 +148,57 @@ Implemented in `src/hooks/use-autosave.ts` and `components/editor/editor-reducer
    if they differ the editor stays `dirty` instead of reporting `saved`.
 5. `beforeunload` warns while edits are unsaved or in flight.
 
-Phase 3 adds the server half: each save sends `revision`, the Server Action
-updates `where { id, ownerId, revision }` and increments it; zero rows updated
-means another tab changed the song and the editor shows `conflict`. A
-`sendBeacon` flush to a Route Handler covers tab close.
+The server half is `saveSongDocument` in `lib/songs/actions.ts`. Each save
+sends the `revision` the editor loaded; the action updates
+`where { id, ownerId, revision }` and increments it inside a transaction.
+Zero rows updated means another tab changed the song and the editor shows
+`conflict` instead of overwriting. Sections are reconciled by id in the same
+transaction: known ids update, new ids insert, missing ids delete, and an id
+that belongs to another song can never be reassigned.
+
+The editor page keys `SongEditor` by song id only. A save revalidates the
+route, which re-renders the page with a new revision, but the client keeps
+its reducer state and the user's in-flight typing instead of remounting.
+
+When the tab is hidden or closed with edits pending, `useFlushOnHide` posts
+the final document with `navigator.sendBeacon` to `/api/songs/[id]/flush`.
+Beacons survive tab close and cannot call Server Actions, so that Route
+Handler exists; it runs the same shared transaction and only differs in
+reading the user from the request cookies.
 
 ## Versioning approach
 
-A version is a validated JSON snapshot of title, metadata, notes, and ordered
-sections. Restoring requires confirmation and first writes a `RECOVERY`
-snapshot of the current state, so a restore is never destructive.
+A version is a JSON snapshot of title, metadata, notes, and ordered sections
+(including chords), validated by `lib/validation/snapshot.ts` on write and on
+read; a corrupt row is skipped rather than crashing the page. The snapshot
+carries a `schemaVersion`, and fields added later (chords) default when
+reading older snapshots.
+
+Saving a version first flushes pending edits, then `createVersion` snapshots
+what the database holds, so a snapshot never captures a half-saved state.
+`restoreVersion` runs one transaction: write a `RECOVERY` snapshot of the
+current state, delete the sections, re-create them from the snapshot, bump
+the revision. The action returns the restored document and the editor
+replaces its state with it (`document/replace`), so no page reload is needed.
+
+## Chord sketch
+
+Each section carries an optional chord progression stored as a JSON column
+(`[{ root, quality, beats }]`) validated by Zod; chords are always loaded with
+their section, so a separate table would add joins for nothing.
+
+- `lib/music/chords.ts` is pure and unit tested: chord symbols, MIDI
+  voicings kept near middle C so every chord sits in the same register, and
+  the seven diatonic chords of the song's key for the picker's suggestions.
+- `lib/music/piano.ts` builds a small piano on the Web Audio API: three
+  detuned oscillator layers per note, a low-pass filter that closes as the
+  note decays, a percussive envelope, and a short synthetic reverb. No
+  samples, no dependency. The `AudioContext` is created on the first click,
+  which browsers require.
+- `hooks/use-chord-player.ts` schedules on the audio clock. A 30 ms interval
+  looks 120 ms ahead and books any chord starting in that window, so timing
+  stays tight even when JavaScript timers drift. Only one section plays at a
+  time; starting another stops the current one.
 
 ## Design system
 

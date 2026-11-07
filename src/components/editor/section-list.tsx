@@ -20,17 +20,18 @@ import type { Dispatch } from "react";
 import { SECTION_TYPE_LABELS, type SectionType, type SongSection } from "@/lib/domain/types";
 import { AddSectionMenu } from "./add-section-menu";
 import { newClientId, type EditorAction } from "./editor-reducer";
-import { SectionCard } from "./section-card";
+import { SectionCard, type SongContext } from "./section-card";
 
 interface SectionListProps {
   sections: SongSection[];
   focusSectionId: string | null;
+  songContext: SongContext;
   dispatch: Dispatch<EditorAction>;
 }
 
 const QUICK_ADD: SectionType[] = ["VERSE", "CHORUS", "BRIDGE"];
 
-export function SectionList({ sections, focusSectionId, dispatch }: SectionListProps) {
+export function SectionList({ sections, focusSectionId, songContext, dispatch }: SectionListProps) {
   const sensors = useSensors(
     // A small distance threshold keeps clicks on the handle from starting a drag.
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -93,6 +94,7 @@ export function SectionList({ sections, focusSectionId, dispatch }: SectionListP
                   index={index}
                   count={sections.length}
                   autoFocus={focusSectionId === section.id}
+                  songContext={songContext}
                   onChange={(patch) => dispatch({ type: "section/update", id: section.id, patch })}
                   onMove={(delta) => dispatch({ type: "section/moveBy", id: section.id, delta })}
                   onDuplicate={() =>

@@ -26,14 +26,22 @@ import {
   type SongSection,
 } from "@/lib/domain/types";
 import { cn } from "@/lib/utils";
+import { ChordStrip } from "./chord-strip";
 import type { SectionPatch } from "./editor-reducer";
 import { LyricTextarea } from "./lyric-textarea";
+
+export interface SongContext {
+  key: string | null;
+  bpm: number | null;
+  timeSignature: string | null;
+}
 
 interface SectionCardProps {
   section: SongSection;
   index: number;
   count: number;
   autoFocus: boolean;
+  songContext: SongContext;
   onChange: (patch: SectionPatch) => void;
   onMove: (delta: -1 | 1) => void;
   onDuplicate: () => void;
@@ -50,6 +58,7 @@ export function SectionCard({
   index,
   count,
   autoFocus,
+  songContext,
   onChange,
   onMove,
   onDuplicate,
@@ -148,6 +157,14 @@ export function SectionCard({
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
+
+      <ChordStrip
+        chords={section.chords}
+        songKey={songContext.key}
+        bpm={songContext.bpm}
+        timeSignature={songContext.timeSignature}
+        onChange={(chords) => onChange({ chords })}
+      />
 
       <div className="px-4 pt-1 pb-4 sm:px-5">
         <LyricTextarea

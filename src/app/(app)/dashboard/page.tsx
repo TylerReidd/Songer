@@ -1,24 +1,24 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Plus } from "lucide-react";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { ContinueWriting } from "@/components/dashboard/continue-writing";
 import { Greeting } from "@/components/dashboard/greeting";
 import { LibrarySummary } from "@/components/dashboard/library-summary";
 import { RecentIdeas } from "@/components/dashboard/recent-ideas";
 import { PageHeader } from "@/components/shell/page-header";
-import { Button } from "@/components/ui/button";
-import { getCurrentUser, getDashboardSummary } from "@/lib/data";
+import { NewSongButton } from "@/components/songs/new-song-button";
+import { getDashboardSummary } from "@/lib/dashboard/queries";
+import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
 /**
- * Server Component: loads everything the dashboard needs in one place and
- * passes plain data to presentational children. Nothing here ships to the
- * browser except the small Greeting and RelativeTime islands.
+ * Server Component: resolves the user, loads everything the dashboard needs
+ * in one place and passes plain data to presentational children. The
+ * sibling loading.tsx provides the Suspense boundary that the session read
+ * requires under Cache Components.
  */
 export default async function DashboardPage() {
-  const user = await getCurrentUser();
+  const user = await requireUser();
   const summary = await getDashboardSummary(user.id);
 
   return (
@@ -26,14 +26,7 @@ export default async function DashboardPage() {
       <PageHeader
         title={<Greeting name={user.name} />}
         description="Pick up where you left off."
-        actions={
-          <Button asChild>
-            <Link href="/songs/song_untitled">
-              <Plus data-icon="inline-start" />
-              New song
-            </Link>
-          </Button>
-        }
+        actions={<NewSongButton />}
       />
       <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex flex-col gap-10">

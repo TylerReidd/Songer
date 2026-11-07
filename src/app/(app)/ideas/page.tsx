@@ -5,20 +5,17 @@ import { IdeaComposer } from "@/components/ideas/idea-composer";
 import { IdeasSearch } from "@/components/ideas/ideas-search";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shell/page-header";
-import { getCurrentUser, listIdeas, listSongs } from "@/lib/data";
-import { DEFAULT_LIBRARY_FILTERS } from "@/lib/songs/filters";
+import { listIdeas } from "@/lib/ideas/queries";
+import { requireUser } from "@/lib/session";
+import { listSongTitles } from "@/lib/songs/queries";
 
 export const metadata: Metadata = { title: "Ideas" };
 
 export default async function IdeasPage({ searchParams }: PageProps<"/ideas">) {
   const { q } = await searchParams;
   const query = (Array.isArray(q) ? q[0] : q) ?? "";
-  const user = await getCurrentUser();
-  const [ideas, songs] = await Promise.all([
-    listIdeas(user.id, query),
-    listSongs(user.id, { ...DEFAULT_LIBRARY_FILTERS, sort: "title" }),
-  ]);
-  const songOptions = songs.map((song) => ({ id: song.id, title: song.title }));
+  const user = await requireUser();
+  const [ideas, songOptions] = await Promise.all([listIdeas(user.id, query), listSongTitles(user.id)]);
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">

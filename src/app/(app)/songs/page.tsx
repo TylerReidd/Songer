@@ -5,21 +5,23 @@ import { PageHeader } from "@/components/shell/page-header";
 import { LibraryToolbar } from "@/components/songs/library-toolbar";
 import { NewSongButton } from "@/components/songs/new-song-button";
 import { SongCard, SongRow } from "@/components/songs/song-card";
-import { getCurrentUser, listSongs } from "@/lib/data";
+import { LibraryPagination } from "@/components/songs/library-pagination";
 import { pluralize } from "@/lib/format";
+import { requireUser } from "@/lib/session";
 import { DEFAULT_LIBRARY_FILTERS, parseLibraryFilters } from "@/lib/songs/filters";
+import { listSongs } from "@/lib/songs/queries";
 
 export const metadata: Metadata = { title: "My Songs" };
 
 /**
- * Server Component. `searchParams` is a Promise in Next 16 and reading it
- * makes this page dynamic, so the sibling loading.tsx supplies the Suspense
- * boundary that streams the shell first and the results after.
+ * Server Component. `searchParams` is a Promise in Next 16; reading it and
+ * the session makes this page dynamic, so the sibling loading.tsx supplies
+ * the Suspense boundary that streams the shell first and the results after.
  */
 export default async function SongsPage({ searchParams }: PageProps<"/songs">) {
   const filters = parseLibraryFilters(await searchParams);
-  const user = await getCurrentUser();
-  const songs = await listSongs(user.id, filters);
+  const user = await requireUser();
+  const { songs, page, pageCount, total } = await listSongs(user.id, filters);
 
   const isFiltered =
     filters.query !== DEFAULT_LIBRARY_FILTERS.query ||
@@ -30,9 +32,7 @@ export default async function SongsPage({ searchParams }: PageProps<"/songs">) {
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
       <PageHeader
         title={filters.favoritesOnly ? "Favorites" : "My Songs"}
-        description={
-          songs.length ? `${pluralize(songs.length, "song")}${isFiltered ? " match" : ""}` : undefined
-        }
+        description={total ? `${pluralize(total, "song")}${isFiltered ? " match" : ""}` : undefined}
         actions={<NewSongButton />}
       />
       <div className="mt-6">
@@ -70,6 +70,7 @@ export default async function SongsPage({ searchParams }: PageProps<"/songs">) {
             ))}
           </ul>
         )}
+        {pageCount > 1 && <LibraryPagination filters={filters} page={page} pageCount={pageCount} />}
       </div>
     </div>
   );

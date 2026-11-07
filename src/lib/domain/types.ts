@@ -1,3 +1,7 @@
+import type { Chord } from "@/lib/music/chords";
+
+export type { Chord };
+
 /**
  * Shared domain types for Songbook.
  *
@@ -77,6 +81,8 @@ export interface SongSection {
   customLabel: string | null;
   content: string;
   position: number;
+  /** Chord sketch for this section; empty when none. */
+  chords: Chord[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -89,7 +95,7 @@ export interface SongWithSections extends Song {
  * The persisted shape of a version snapshot. It is versioned so a later
  * change to the song model can migrate old snapshots on read.
  */
-export interface SongSnapshotV1 {
+export type SongSnapshotV1 = {
   schemaVersion: 1;
   title: string;
   status: SongStatus;
@@ -104,8 +110,9 @@ export interface SongSnapshotV1 {
     customLabel: string | null;
     content: string;
     position: number;
+    chords: Chord[];
   }>;
-}
+};
 export type SongSnapshot = SongSnapshotV1;
 
 export type VersionKind = "MANUAL" | "RECOVERY";

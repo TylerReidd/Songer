@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { LyricFontPreference } from "@/components/settings/lyric-font-preference";
 import { ProfileForm } from "@/components/settings/profile-form";
+import { SignOutButton } from "@/components/settings/sign-out-button";
 import { PageHeader } from "@/components/shell/page-header";
-import { Button } from "@/components/ui/button";
-import { getCurrentUser } from "@/lib/data";
 import { formatShortDate } from "@/lib/format";
+import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -26,7 +26,7 @@ function SettingsSection({ title, description, children }: { title: string; desc
  * intentionally absent until the light theme ships.
  */
 export default async function SettingsPage() {
-  const user = await getCurrentUser();
+  const user = await requireUser();
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
@@ -38,7 +38,7 @@ export default async function SettingsPage() {
         <SettingsSection title="Editor typography" description="The typeface used for lyrics and ideas.">
           <LyricFontPreference initial={user.lyricFont} />
         </SettingsSection>
-        <SettingsSection title="Account" description="Membership and data.">
+        <SettingsSection title="Account" description="Membership and sessions.">
           <dl className="grid gap-3 text-sm">
             <div className="flex items-center justify-between rounded-lg border bg-surface-elevated px-4 py-3">
               <dt className="text-text-secondary">Member since</dt>
@@ -47,9 +47,7 @@ export default async function SettingsPage() {
             <div className="flex items-center justify-between rounded-lg border bg-surface-elevated px-4 py-3">
               <dt className="text-text-secondary">Sign out of this device</dt>
               <dd>
-                <Button variant="outline" size="sm" disabled title="Available once authentication ships">
-                  Sign out
-                </Button>
+                <SignOutButton />
               </dd>
             </div>
           </dl>

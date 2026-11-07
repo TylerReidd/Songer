@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SectionHeading } from "@/components/shared/section-heading";
-import type { DashboardSummary } from "@/lib/data";
+import type { DashboardSummary } from "@/lib/dashboard/queries";
 
 interface Tile {
   label: string;

@@ -4,9 +4,12 @@ import { Info } from "lucide-react";
 import { useEffect, useReducer } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useAutosave, useUnsavedChangesWarning } from "@/hooks/use-autosave";
+import { toast } from "sonner";
+import { useAutosave, useFlushOnHide, useUnsavedChangesWarning } from "@/hooks/use-autosave";
 import type { SongVersion, SongWithSections } from "@/lib/domain/types";
+import { createVersion, restoreVersion, saveSongDocument } from "@/lib/songs/actions";
 import { cn } from "@/lib/utils";
+import type { SaveSongDocumentInput } from "@/lib/validation/song";
 import { ContextPanel } from "./context-panel";
 import { EditorHeader } from "./editor-header";
 import { createInitialState, editorReducer, type EditorState } from "./editor-reducer";
@@ -19,21 +22,32 @@ interface SongEditorProps {
   versions: SongVersion[];
 }
 
-interface SavePayload {
-  songId: string;
-  revision: number;
-  song: EditorState["song"];
-  sections: EditorState["sections"];
-}
-
-/**
- * PHASE 1 persistence stand-in. Resolves after a short delay so the save
- * lifecycle (dirty → saving → saved) can be exercised end to end. Phase 3
- * replaces this with a Server Action that performs the revision check.
- */
-async function mockSave(_payload: SavePayload): Promise<{ revision: number }> {
-  await new Promise((resolve) => setTimeout(resolve, 450));
-  return { revision: _payload.revision + 1 };
+/** Shapes editor state into the payload the saveSongDocument action validates. */
+function toSavePayload(state: EditorState): SaveSongDocumentInput {
+  const { song, sections } = state;
+  return {
+    songId: song.id,
+    revision: song.revision,
+    song: {
+      title: song.title,
+      status: song.status,
+      key: song.key,
+      bpm: song.bpm,
+      timeSignature: song.timeSignature,
+      capo: song.capo,
+      tuning: song.tuning,
+      notes: song.notes,
+      isFavorite: song.isFavorite,
+    },
+    sections: sections.map((section, position) => ({
+      id: section.id,
+      type: section.type,
+      customLabel: section.customLabel,
+      content: section.content,
+      chords: section.chords,
+      position,
+    })),
+  };
 }
 
 /**
@@ -44,17 +58,24 @@ async function mockSave(_payload: SavePayload): Promise<{ revision: number }> {
 export function SongEditor({ song, versions }: SongEditorProps) {
   const [state, dispatch] = useReducer(editorReducer, song, createInitialState);
 
-  const buildPayload = (): SavePayload => ({
-    songId: state.song.id,
-    revision: state.song.revision,
-    song: state.song,
-    sections: state.sections,
-  });
+  const buildPayload = () => toSavePayload(state);
 
-  async function save(payload: SavePayload) {
+  /**
+   * Runs the Server Action and folds its result into the reducer. A stale
+   * revision comes back as `conflict`; a thrown error (network, server) is a
+   * retryable `error`. Neither ever reports "Saved".
+   */
+  async function save(payload: SaveSongDocumentInput) {
     try {
-      const result = await mockSave(payload);
-      dispatch({ type: "save/success", at: new Date(), revision: result.revision });
+      const result = await saveSongDocument(payload);
+      if (result.ok) {
+        dispatch({ type: "save/success", at: result.data.updatedAt, revision: result.data.revision });
+      } else if (result.code === "conflict") {
+        dispatch({ type: "save/failure", reason: "conflict" });
+      } else {
+        dispatch({ type: "save/failure", reason: "error" });
+        toast.error(result.message);
+      }
     } catch {
       dispatch({ type: "save/failure", reason: "error" });
     }
@@ -67,7 +88,31 @@ export function SongEditor({ song, versions }: SongEditorProps) {
     onStart: () => dispatch({ type: "save/start" }),
   });
 
-  useUnsavedChangesWarning(state.saveStatus === "dirty" || state.saveStatus === "saving");
+  const hasPendingEdits = state.saveStatus === "dirty" || state.saveStatus === "saving";
+  useUnsavedChangesWarning(hasPendingEdits);
+  useFlushOnHide(hasPendingEdits, () => ({
+    url: `/api/songs/${state.song.id}/flush`,
+    body: buildPayload(),
+  }));
+
+  /** Versions snapshot what the server has, so pending edits are saved first. */
+  async function handleCreateVersion(name: string) {
+    if (hasPendingEdits) {
+      dispatch({ type: "save/start" });
+      await save(buildPayload());
+    }
+    const result = await createVersion(state.song.id, name);
+    if (result.ok) toast.success(`Saved version “${name || "Untitled version"}”`);
+    else toast.error(result.message);
+  }
+
+  async function handleRestoreVersion(versionId: string, versionName: string) {
+    const result = await restoreVersion(state.song.id, versionId);
+    if (result.ok) {
+      dispatch({ type: "document/replace", song: result.data.song, sections: result.data.sections });
+      toast.success(`Restored “${versionName}”`, { description: "A recovery version of the previous state was saved." });
+    } else toast.error(result.message);
+  }
 
   // Clear the pending-focus marker once the section has had a chance to mount.
   useEffect(() => {
@@ -81,6 +126,8 @@ export function SongEditor({ song, versions }: SongEditorProps) {
       tab={state.panelTab}
       onTabChange={(tab) => dispatch({ type: "panel/tab", tab })}
       onPatch={(patch) => dispatch({ type: "song/update", patch })}
+      onCreateVersion={handleCreateVersion}
+      onRestoreVersion={handleRestoreVersion}
     />
   );
 
@@ -120,7 +167,12 @@ export function SongEditor({ song, versions }: SongEditorProps) {
               </Sheet>
             </div>
             <div className="mt-8">
-              <SectionList sections={state.sections} focusSectionId={state.focusSectionId} dispatch={dispatch} />
+              <SectionList
+                sections={state.sections}
+                focusSectionId={state.focusSectionId}
+                songContext={{ key: state.song.key, bpm: state.song.bpm, timeSignature: state.song.timeSignature }}
+                dispatch={dispatch}
+              />
             </div>
           </div>
         </div>

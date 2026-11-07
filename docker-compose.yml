@@ -1,0 +1,22 @@
+# Local development database. Production uses a managed PostgreSQL (Neon).
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: songbook-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: songbook
+      POSTGRES_PASSWORD: songbook
+      POSTGRES_DB: songbook
+    ports:
+      - "5433:5432"
+    volumes:
+      - songbook-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U songbook -d songbook"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  songbook-pgdata:

@@ -1,8 +1,7 @@
 "use client";
 
 import { Eye, History, LifeBuoy, Plus, RotateCcw } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+import { useState, useTransition } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { RelativeTime } from "@/components/shared/relative-time";
 import {
@@ -31,20 +30,20 @@ import { SECTION_TYPE_LABELS, sectionLabel, type SongVersion } from "@/lib/domai
 
 interface VersionListProps {
   versions: SongVersion[];
+  onCreate: (name: string) => Promise<void>;
+  onRestore: (versionId: string, versionName: string) => Promise<void>;
 }
 
-export function VersionList({ versions }: VersionListProps) {
+export function VersionList({ versions, onCreate, onRestore }: VersionListProps) {
+  const [pending, startTransition] = useTransition();
   const [saveOpen, setSaveOpen] = useState(false);
   const [name, setName] = useState("");
   const [preview, setPreview] = useState<SongVersion | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<SongVersion | null>(null);
 
-  const notPersisted = (message: string) =>
-    toast(message, { description: "Versions are not saved while Songbook runs on sample data." });
-
   return (
     <div className="flex flex-col gap-4">
-      <Button size="sm" className="w-full" onClick={() => setSaveOpen(true)}>
+      <Button size="sm" className="w-full" onClick={() => setSaveOpen(true)} disabled={pending}>
         <Plus data-icon="inline-start" />
         Save current version
       </Button>
@@ -101,8 +100,9 @@ export function VersionList({ versions }: VersionListProps) {
             onSubmit={(event) => {
               event.preventDefault();
               setSaveOpen(false);
-              notPersisted(`Saved version “${name.trim() || "Untitled version"}”`);
+              const versionName = name.trim();
               setName("");
+              startTransition(() => onCreate(versionName));
             }}
             className="flex flex-col gap-4"
           >
@@ -188,7 +188,11 @@ export function VersionList({ versions }: VersionListProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => notPersisted(`Restored “${restoreTarget?.name}”`)}>
+            <AlertDialogAction
+              onClick={() => {
+                if (restoreTarget) startTransition(() => onRestore(restoreTarget.id, restoreTarget.name));
+              }}
+            >
               Restore
             </AlertDialogAction>
           </AlertDialogFooter>

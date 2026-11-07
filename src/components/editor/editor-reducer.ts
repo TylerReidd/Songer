@@ -13,7 +13,7 @@ export type PanelTab = "details" | "notes" | "versions";
 export type SongPatch = Partial<
   Pick<Song, "title" | "status" | "key" | "bpm" | "timeSignature" | "capo" | "tuning" | "notes" | "isFavorite">
 >;
-export type SectionPatch = Partial<Pick<SongSection, "type" | "customLabel" | "content">>;
+export type SectionPatch = Partial<Pick<SongSection, "type" | "customLabel" | "content" | "chords">>;
 
 export interface EditorState {
   song: Song;
@@ -41,6 +41,7 @@ export type EditorAction =
   | { type: "save/start" }
   | { type: "save/success"; at: Date; revision: number }
   | { type: "save/failure"; reason: "error" | "conflict" }
+  | { type: "document/replace"; song: Song; sections: SongSection[] }
   | { type: "panel/toggle"; open?: boolean }
   | { type: "panel/tab"; tab: PanelTab }
   | { type: "focus/clear" };
@@ -72,6 +73,7 @@ function newSection(state: EditorState, id: string, type: SectionType): SongSect
     type,
     customLabel: null,
     content: "",
+    chords: [],
     position: state.sections.length,
     createdAt: now,
     updatedAt: now,
@@ -154,6 +156,18 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
 
     case "save/failure":
       return { ...state, saveStatus: action.reason, savingVersion: null };
+
+    case "document/replace":
+      // Server-authoritative reset (e.g. after restoring a version): nothing is dirty.
+      return {
+        ...state,
+        song: action.song,
+        sections: normalizePositions(action.sections),
+        saveStatus: "idle",
+        dirtyVersion: 0,
+        savingVersion: null,
+        focusSectionId: null,
+      };
 
     case "panel/toggle":
       return { ...state, panelOpen: action.open ?? !state.panelOpen };

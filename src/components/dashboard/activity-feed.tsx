@@ -2,7 +2,7 @@ import Link from "next/link";
 import { History, Lightbulb, Music2 } from "lucide-react";
 import { RelativeTime } from "@/components/shared/relative-time";
 import { SectionHeading } from "@/components/shared/section-heading";
-import type { ActivityEntry } from "@/lib/data";
+import type { ActivityEntry } from "@/lib/dashboard/queries";
 import { SONG_STATUS_LABELS } from "@/lib/domain/types";
 
 function describe(entry: ActivityEntry) {

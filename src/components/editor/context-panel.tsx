@@ -13,6 +13,8 @@ interface ContextPanelProps {
   tab: PanelTab;
   onTabChange: (tab: PanelTab) => void;
   onPatch: (patch: SongPatch) => void;
+  onCreateVersion: (name: string) => Promise<void>;
+  onRestoreVersion: (versionId: string, versionName: string) => Promise<void>;
 }
 
 const TABS: Array<{ value: PanelTab; label: string }> = [
@@ -22,7 +24,7 @@ const TABS: Array<{ value: PanelTab; label: string }> = [
 ];
 
 /** Right-hand panel content. Rendered in a sidebar on desktop and a sheet on mobile. */
-export function ContextPanel({ song, versions, tab, onTabChange, onPatch }: ContextPanelProps) {
+export function ContextPanel({ song, versions, tab, onTabChange, onPatch, onCreateVersion, onRestoreVersion }: ContextPanelProps) {
   return (
     <Tabs value={tab} onValueChange={(value) => onTabChange(value as PanelTab)} className="flex h-full flex-col gap-0">
       <div className="border-b px-3 pt-3 pb-0">
@@ -42,7 +44,7 @@ export function ContextPanel({ song, versions, tab, onTabChange, onPatch }: Cont
           <NotesEditor value={song.notes} onChange={(notes) => onPatch({ notes })} />
         </TabsContent>
         <TabsContent value="versions" className="mt-0">
-          <VersionList versions={versions} />
+          <VersionList versions={versions} onCreate={onCreateVersion} onRestore={onRestoreVersion} />
         </TabsContent>
       </div>
     </Tabs>

@@ -4,7 +4,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { RelativeTime } from "@/components/shared/relative-time";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Button } from "@/components/ui/button";
+import { NewSongButton } from "@/components/songs/new-song-button";
 import type { Song } from "@/lib/domain/types";
 
 export function ContinueWriting({ songs }: { songs: Song[] }) {
@@ -16,11 +16,7 @@ export function ContinueWriting({ songs }: { songs: Song[] }) {
           icon={Music2}
           title="No songs yet"
           description="Create your first song and it will show up here, ready to pick back up."
-          action={
-            <Button asChild>
-              <Link href="/songs/song_untitled">New song</Link>
-            </Button>
-          }
+          action={<NewSongButton />}
         />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">

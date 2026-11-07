@@ -11,8 +11,20 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/shared/status-badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -30,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SONG_STATUS_LABELS, SONG_STATUSES, type Song, type SongStatus } from "@/lib/domain/types";
+import { deleteSong, duplicateSong } from "@/lib/songs/actions";
 import { cn } from "@/lib/utils";
 import type { SaveStatus, SongPatch } from "./editor-reducer";
 import { SaveStatusIndicator } from "./save-status";
@@ -55,8 +68,9 @@ export function EditorHeader({
   onTogglePanel,
   onShowVersions,
 }: EditorHeaderProps) {
-  const notPersisted = (message: string) =>
-    toast(message, { description: "Not saved while Songbook runs on sample data." });
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur-md">
@@ -124,7 +138,18 @@ export function EditorHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onSelect={() => notPersisted("Song duplicated")}>
+              <DropdownMenuItem
+                disabled={pending}
+                onSelect={() =>
+                  startTransition(async () => {
+                    const result = await duplicateSong(song.id);
+                    if (result.ok) {
+                      toast.success("Song duplicated");
+                      router.push(`/songs/${result.data.id}`);
+                    } else toast.error(result.message);
+                  })
+                }
+              >
                 <Copy aria-hidden="true" />
                 Duplicate song
               </DropdownMenuItem>
@@ -135,7 +160,7 @@ export function EditorHeader({
                 {song.status === "ARCHIVED" ? "Restore from archive" : "Archive song"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onSelect={() => notPersisted("Delete requires confirmation")}>
+              <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
                 <Trash2 aria-hidden="true" />
                 Delete song
               </DropdownMenuItem>
@@ -159,6 +184,35 @@ export function EditorHeader({
           </Tooltip>
         </div>
       </div>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete “{song.title}”?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the song, its sections, and every saved version. There is no
+              undo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep song</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() =>
+                startTransition(async () => {
+                  const result = await deleteSong(song.id);
+                  if (result.ok) {
+                    toast.success("Song deleted");
+                    router.push("/songs");
+                  } else toast.error(result.message);
+                })
+              }
+            >
+              Delete song
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }

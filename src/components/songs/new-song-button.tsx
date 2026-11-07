@@ -1,31 +1,21 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { useTransition } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { createSong } from "@/lib/songs/actions";
 
 /**
- * Phase 1: opens the blank sample song so the empty editor state can be
- * reviewed. Phase 2 calls the createSong Server Action and redirects to the
- * new id.
+ * Calls the createSong Server Action, which inserts the row and redirects to
+ * the new editor. useTransition keeps the button in a pending state until
+ * the redirect lands.
  */
 export function NewSongButton() {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   return (
-    <Button
-      disabled={isPending}
-      onClick={() => {
-        toast("Opening a blank sample song.", {
-          description: "Creating real songs arrives with the database in Phase 2.",
-        });
-        startTransition(() => router.push("/songs/song_untitled"));
-      }}
-    >
-      <Plus data-icon="inline-start" />
+    <Button disabled={isPending} onClick={() => startTransition(async () => { await createSong(); })}>
+      {isPending ? <Loader2 className="animate-spin" data-icon="inline-start" /> : <Plus data-icon="inline-start" />}
       New song
     </Button>
   );

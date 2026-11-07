@@ -57,7 +57,7 @@ export function LibraryToolbar({ filters }: { filters: LibraryFilters }) {
   }
 
   function update(patch: Partial<LibraryFilters>) {
-    navigate({ ...filters, ...patch });
+    navigate({ ...filters, ...patch, page: 1 });
   }
 
   function handleQueryChange(value: string) {

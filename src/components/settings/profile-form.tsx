@@ -1,22 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { UserProfile } from "@/lib/domain/types";
+import { updateProfile } from "@/lib/settings/actions";
 
 export function ProfileForm({ user }: { user: UserProfile }) {
   const [name, setName] = useState(user.name ?? "");
-  const dirty = name !== (user.name ?? "");
+  const [pending, startTransition] = useTransition();
+  const dirty = name.trim() !== (user.name ?? "");
 
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        toast("Profile updated", {
-          description: "Profile changes are not saved while Songbook runs on sample data.",
+        startTransition(async () => {
+          const result = await updateProfile({ name });
+          if (result.ok) toast.success("Profile updated");
+          else toast.error(result.message);
         });
       }}
       className="flex flex-col gap-4"
@@ -33,7 +38,8 @@ export function ProfileForm({ user }: { user: UserProfile }) {
         </div>
       </div>
       <div>
-        <Button type="submit" size="sm" disabled={!dirty}>
+        <Button type="submit" size="sm" disabled={!dirty || pending}>
+          {pending && <Loader2 className="animate-spin" data-icon="inline-start" />}
           Save changes
         </Button>
       </div>
