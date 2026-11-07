@@ -1,26 +1,220 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Songbook design tokens
+ * ----------------------
+ * Raw palette values live on :root (light) and .dark (dark-first default).
+ * Components never reference hex values directly; they use the semantic
+ * Tailwind utilities generated from the @theme block below
+ * (bg-background, text-text-secondary, bg-surface-elevated, ...).
+ */
 
 @theme inline {
+  /* shadcn semantic colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Songbook additions */
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-editor: var(--surface-editor);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-subtle: var(--brand-subtle);
+  --color-warning: var(--warning);
+
+  /* Typography */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-sans);
+  --font-lyric: var(--font-lyric-serif);
+
+  /* Radii */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Light theme (defined now, shipped as an option after the MVP) */
+:root {
+  --radius: 0.625rem;
+
+  --background: #faf9f6;
+  --foreground: #1b2129;
+  --surface-elevated: #ffffff;
+  --surface-editor: #ffffff;
+  --text-secondary: #5b6775;
+  --text-muted: #8a95a1;
+
+  --brand: #2a9d8b;
+  --brand-hover: #238a7a;
+  --brand-subtle: rgba(42, 157, 139, 0.12);
+  --warning: #b8862f;
+
+  --card: var(--surface-elevated);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-elevated);
+  --popover-foreground: var(--foreground);
+  --primary: var(--brand);
+  --primary-foreground: #ffffff;
+  --secondary: #eeede8;
+  --secondary-foreground: var(--foreground);
+  --muted: #f0efea;
+  --muted-foreground: var(--text-secondary);
+  --accent: #ecebe5;
+  --accent-foreground: var(--foreground);
+  --destructive: #c4484c;
+  --border: #e2e0d8;
+  --input: #e2e0d8;
+  --ring: var(--brand);
+  --chart-1: #2a9d8b;
+  --chart-2: #5b6775;
+  --chart-3: #b8862f;
+  --chart-4: #8a95a1;
+  --chart-5: #c4484c;
+
+  --sidebar: #f2f1ec;
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e8e7e1;
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: #e2e0d8;
+  --sidebar-ring: var(--brand);
+}
+
+/* Dark theme: the default Songbook experience */
+.dark {
+  --background: #0c1015;
+  --foreground: #f2f0eb;
+  --surface-elevated: #19222c;
+  --surface-editor: #151c24;
+  --text-secondary: #9aa7b5;
+  --text-muted: #687786;
+
+  --brand: #5cc8b5;
+  --brand-hover: #79dac9;
+  --brand-subtle: rgba(92, 200, 181, 0.12);
+  --warning: #d8aa63;
+
+  --card: var(--surface-elevated);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-elevated);
+  --popover-foreground: var(--foreground);
+  --primary: var(--brand);
+  --primary-foreground: #0c1015;
+  --secondary: #1f2a35;
+  --secondary-foreground: var(--foreground);
+  --muted: #19222c;
+  --muted-foreground: var(--text-secondary);
+  --accent: #1f2a35;
+  --accent-foreground: var(--foreground);
+  --destructive: #d76d70;
+  --border: #2a3541;
+  --input: #2a3541;
+  --ring: var(--brand);
+  --chart-1: #5cc8b5;
+  --chart-2: #9aa7b5;
+  --chart-3: #d8aa63;
+  --chart-4: #687786;
+  --chart-5: #d76d70;
+
+  --sidebar: #121820;
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: #0c1015;
+  --sidebar-accent: #1a2330;
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: #2a3541;
+  --sidebar-ring: var(--brand);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: dark;
+  }
+  html:not(.dark) {
+    color-scheme: light;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: var(--brand-subtle);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Lyric typography: long-form writing surface. The font family follows the
+     user's editor preference, applied as a data attribute on <html>. */
+  .lyric-text {
+    font-family: var(--font-lyric-serif);
+    font-size: 1.125rem;
+    line-height: 1.8;
+    letter-spacing: 0.005em;
+  }
+  html[data-lyric-font="sans"] .lyric-text {
+    font-family: var(--font-geist-sans);
+    letter-spacing: 0;
+  }
+
+  /* Thin, unobtrusive scrollbars for panels */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
