@@ -3,7 +3,7 @@
 A focused songwriting workspace. Lyrics, song structure, musical details, and
 version history in one quiet place.
 
-> **Status:** Phase 3 of 4 complete (versions, chord sketch, flush on close, pagination).
+> **Status:** Phase 3 of 4 complete (versions, chord sketch, recordings, flush on close, pagination).
 > See [PROJECT_STATUS.md](./PROJECT_STATUS.md) for what works today.
 
 ## Features
@@ -15,6 +15,8 @@ version history in one quiet place.
 - **Chord sketch** per section: pick chords (with the key's diatonic chords
   suggested first), set beats, and hear them as a looping block-chord piano
   at the song's tempo, built on the Web Audio API with no samples
+- **Takes**: record up to ten 60-second voice memos per song in the browser
+  and play them back from the editor; audio is private to the owner
 - **Autosave** with a single-flight save queue, revision conflict detection,
   a flush on tab close, and an honest status indicator
 - **Version history**: named snapshots, preview, confirmed restore with an
@@ -31,7 +33,7 @@ version history in one quiet place.
 | Styling | Tailwind CSS 4, shadcn/ui, Lucide icons |
 | Interaction | dnd-kit for section reordering |
 | Data | PostgreSQL 17, Prisma 7 (driver adapter) |
-| Auth | Better Auth (email/password, database sessions) |
+| Auth | Better Auth (email/password with email verification, database sessions) |
 | Validation | Zod at every Server Action boundary |
 | Testing | Vitest (integration tests against real PostgreSQL), Playwright |
 | Hosting | Vercel + managed PostgreSQL |
@@ -52,6 +54,12 @@ npm run dev
 Open http://localhost:3000 and create an account, or sign in with the seeded
 account `demo@songbook.local` / `songbook-demo`. "Try the demo" on the sign-in
 page creates a private throwaway workspace instead.
+
+New accounts must confirm their email before the first sign-in. Without SMTP
+credentials in `.env` the confirmation and password-reset emails are printed
+to the `next dev` terminal, so you can click the link from there. To send real
+email, fill in `SMTP_USER` and `SMTP_PASS` (a Gmail address and an App Password
+is enough; see `.env.example`).
 
 Other scripts:
 
@@ -74,8 +82,8 @@ data model, autosave design, and the reasoning behind the main choices.
 - **Phase 4** Accessibility and responsive review, performance pass,
   deployment to Vercel with a demo, screenshots
 
-Beyond the MVP: audio attachments, chord diagrams, collaboration, export,
-offline support, and a mobile companion.
+Beyond the MVP: chord diagrams, collaboration, export, offline support, and
+a mobile companion.
 
 ## License
 

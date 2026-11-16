@@ -49,8 +49,10 @@ src/
     songs/save-document.ts  The autosave transaction (shared by action and flush route)
     music/chords.ts         Chord names, voicings, diatonic suggestions (pure)
     music/piano.ts          Web Audio piano synth
+    recordings/             Voice memos: limits, storage, store, actions, queries
   hooks/use-autosave.ts     Debounced single-flight autosave + tab-close flush
   hooks/use-chord-player.ts Lookahead scheduler for chord playback
+  hooks/use-recorder.ts     MediaRecorder capture with a time limit and level meter
   proxy.ts                  Cookie-presence redirect (not the security boundary)
 prisma/                     schema, migrations, seed
 tests/integration/          Ownership and versioning tests against real PostgreSQL
@@ -117,6 +119,24 @@ Phase 2 mirrors them one to one.
 - Better Auth with email/password; sessions and accounts live in PostgreSQL
   via the Prisma adapter. The browser talks to `/api/auth/*` through Better
   Auth's React client; the Route Handler at `app/api/auth/[...all]` mounts it.
+- Email verification is mandatory: sign-up creates the account but no
+  session, and sign-in is refused (and the link resent) until the emailed
+  link is opened. Opening it signs the user in. Password reset follows the
+  same path: the emailed link lands on `/reset-password?token=`, the new
+  password is posted with the token, and every other session is revoked.
+  Sign-up with an existing email returns the same "check your email" answer
+  as a new one, so the form cannot be used to probe for accounts.
+- `lib/email.ts` is the only module that sends mail: Nodemailer over SMTP
+  (a Gmail App Password is enough), four environment variables, one
+  `sendEmail` function with a plain-text body and a small HTML template.
+  With no credentials in development it prints the message to the server
+  console; in production it throws, so a misconfigured deploy fails loudly.
+  `AUTH_TEST_MODE=on`, set only by the Playwright web server, turns off
+  verification and rate limiting so tests can sign up without a mailbox.
+- The seed and "Try the demo" create accounts directly through
+  `lib/auth-users.ts` (already verified, credential row hashed with Better
+  Auth's own function) rather than the public sign-up, so no mail goes to
+  their placeholder addresses.
 - `proxy.ts` (Next 16's name for middleware) redirects anonymous visitors
   based on cookie presence only. It is a convenience, not the security boundary.
 - `requireUser()` in `lib/session.ts` validates the session against the
@@ -199,6 +219,28 @@ their section, so a separate table would add joins for nothing.
   looks 120 ms ahead and books any chord starting in that window, so timing
   stays tight even when JavaScript timers drift. Only one section plays at a
   time; starting another stops the current one.
+
+## Recordings (voice memos)
+
+Each song keeps up to ten takes of at most 60 seconds, captured in the
+browser with the MediaRecorder API (WebM/Opus in Chrome and Firefox,
+MP4/AAC in Safari; the MIME type is stored with each take).
+
+- **Storage.** The bytes live in a `Bytes` column on the `song_recording`
+  row. At roughly half a megabyte per take that is free at this project's
+  scale and needs no extra service. `lib/recordings/storage.ts` is the only
+  module that touches the bytes, so moving to object storage later is a
+  change to three functions.
+- **Upload** goes through a Route Handler (`POST /api/songs/[id]/recordings`)
+  because the body is a multipart file; `lib/recordings/store.ts` does the
+  validation and limits so the handler stays thin and the rules are
+  integration tested.
+- **Playback** goes through `GET /api/recordings/[id]`, which checks the
+  session and the song's owner before streaming. Recordings never have a
+  public URL. The handler answers single byte-range requests with 206, which
+  Safari's audio element requires.
+- **Metadata queries never select the bytes**, so listing takes stays cheap.
+- Demo workspaces cannot record, so the cleanup cron never deals with audio.
 
 ## Design system
 

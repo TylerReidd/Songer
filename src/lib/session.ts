@@ -26,6 +26,7 @@ export const getSessionUser = cache(async (): Promise<UserProfile | null> => {
     email: user.email,
     name: user.name || null,
     lyricFont: normalizeLyricFont(user.lyricFont),
+    isDemo: user.isDemo === true,
     createdAt: user.createdAt,
   };
 });

@@ -13,14 +13,21 @@ export default defineConfig({
     baseURL: "http://localhost:3100",
     colorScheme: "dark",
     viewport: { width: 1440, height: 900 },
-    // Let Web Audio start in headless Chromium so the chord player can be exercised.
-    launchOptions: { args: ["--autoplay-policy=no-user-gesture-required"] },
+    // Headless Chromium: let Web Audio start without a gesture, and answer the
+    // microphone prompt with a fake audio device so recording can be exercised.
+    launchOptions: {
+      args: [
+        "--autoplay-policy=no-user-gesture-required",
+        "--use-fake-ui-for-media-stream",
+        "--use-fake-device-for-media-stream",
+      ],
+    },
   },
   webServer: {
     command: "npm run build && npx next start -p 3100",
     url: "http://localhost:3100",
     reuseExistingServer: true,
     timeout: 180_000,
-    env: { BETTER_AUTH_URL: "http://localhost:3100" },
+    env: { BETTER_AUTH_URL: "http://localhost:3100", AUTH_TEST_MODE: "on" },
   },
 });

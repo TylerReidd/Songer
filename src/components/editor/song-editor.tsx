@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { useAutosave, useFlushOnHide, useUnsavedChangesWarning } from "@/hooks/use-autosave";
-import type { SongVersion, SongWithSections } from "@/lib/domain/types";
+import type { SongRecording, SongVersion, SongWithSections } from "@/lib/domain/types";
 import { createVersion, restoreVersion, saveSongDocument } from "@/lib/songs/actions";
 import { cn } from "@/lib/utils";
 import type { SaveSongDocumentInput } from "@/lib/validation/song";
@@ -20,6 +20,7 @@ import { TitleInput } from "./title-input";
 interface SongEditorProps {
   song: SongWithSections;
   versions: SongVersion[];
+  recordings: SongRecording[];
 }
 
 /** Shapes editor state into the payload the saveSongDocument action validates. */
@@ -55,7 +56,7 @@ function toSavePayload(state: EditorState): SaveSongDocumentInput {
  * it over; from then on this component owns the document and persists it
  * through the autosave hook. Nothing below this line re-fetches.
  */
-export function SongEditor({ song, versions }: SongEditorProps) {
+export function SongEditor({ song, versions, recordings }: SongEditorProps) {
   const [state, dispatch] = useReducer(editorReducer, song, createInitialState);
 
   const buildPayload = () => toSavePayload(state);
@@ -123,6 +124,7 @@ export function SongEditor({ song, versions }: SongEditorProps) {
     <ContextPanel
       song={state.song}
       versions={versions}
+      recordings={recordings}
       tab={state.panelTab}
       onTabChange={(tab) => dispatch({ type: "panel/tab", tab })}
       onPatch={(patch) => dispatch({ type: "song/update", patch })}

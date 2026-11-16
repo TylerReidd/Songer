@@ -126,6 +126,17 @@ export interface SongVersion {
   createdAt: Date;
 }
 
+/** Voice memo metadata. The audio itself is streamed from /api/recordings/[id]. */
+export interface SongRecording {
+  id: string;
+  songId: string;
+  name: string;
+  mimeType: string;
+  durationMs: number;
+  sizeBytes: number;
+  createdAt: Date;
+}
+
 export interface Idea {
   id: string;
   ownerId: string;
@@ -143,6 +154,8 @@ export interface UserProfile {
   email: string;
   name: string | null;
   lyricFont: LyricFont;
+  /** Throwaway "Try the demo" account; some features (recording) are off. */
+  isDemo: boolean;
   createdAt: Date;
 }
 

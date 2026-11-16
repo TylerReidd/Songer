@@ -75,6 +75,36 @@ test("versions: save, restore, and a recovery point", async ({ page }) => {
   await expect(page.getByText("Recovery").first()).toBeVisible();
 });
 
+test("record a take, play it back, rename and delete it", async ({ page, context }) => {
+  await context.grantPermissions(["microphone"]);
+  await signIn(page, SEED.email, SEED.password);
+  await page.goto("/songs");
+  await page.getByRole("link", { name: /Salt and Static/ }).first().click();
+  await page.waitForURL(/\/songs\//);
+
+  await page.getByRole("tab", { name: "Takes" }).click();
+  await page.getByRole("button", { name: "Start recording" }).click();
+  await expect(page.getByText("Recording", { exact: true })).toBeVisible();
+  await page.waitForTimeout(1500);
+  await page.getByRole("button", { name: "Stop recording" }).click();
+  await expect(page.getByText("Recording saved")).toBeVisible({ timeout: 15_000 });
+
+  const audio = page.locator("audio").first();
+  await expect(audio).toHaveAttribute("src", /\/api\/recordings\//);
+  const response = await page.request.get(await audio.getAttribute("src") ?? "");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toMatch(/^audio\//);
+
+  await page.getByRole("button", { name: "Rename take" }).first().click();
+  await page.getByLabel("Take name").fill("Melody idea");
+  await page.getByRole("button", { name: "Save name" }).click();
+  await expect(page.getByText("Melody idea")).toBeVisible();
+
+  await page.getByRole("button", { name: "Delete take" }).first().click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByText("Recording deleted")).toBeVisible();
+});
+
 test("a song cannot be opened by another user", async ({ page, browser }) => {
   await signIn(page, SEED.email, SEED.password);
   await page.goto("/songs");
@@ -101,4 +131,17 @@ test("wrong password shows an error", async ({ page }) => {
   await page.fill("#password", "wrong-password");
   await page.click("button[type=submit]");
   await expect(page.locator("p[role=alert]")).toHaveText("Invalid email or password");
+});
+
+test("forgot password: request a reset link from the sign-in page", async ({ page }) => {
+  await page.goto("/sign-in");
+  await page.getByRole("link", { name: "Forgot password?" }).click();
+  await page.waitForURL("**/forgot-password");
+  await page.fill("#email", SEED.email);
+  await page.click("button[type=submit]");
+  await expect(page.getByText("If an account exists for that address")).toBeVisible();
+
+  // A reset page without a token (or with a rejected one) offers a fresh request.
+  await page.goto("/reset-password?error=INVALID_TOKEN");
+  await expect(page.getByRole("heading", { name: "Link expired" })).toBeVisible();
 });

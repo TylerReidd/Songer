@@ -8,7 +8,7 @@ import { insertAfter, moveItem, normalizePositions, removeAt } from "@/lib/songs
  */
 
 export type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error" | "conflict";
-export type PanelTab = "details" | "notes" | "versions";
+export type PanelTab = "details" | "notes" | "versions" | "recordings";
 
 export type SongPatch = Partial<
   Pick<Song, "title" | "status" | "key" | "bpm" | "timeSignature" | "capo" | "tuning" | "notes" | "isFavorite">

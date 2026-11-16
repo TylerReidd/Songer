@@ -1,15 +1,17 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Song, SongVersion } from "@/lib/domain/types";
+import type { Song, SongRecording, SongVersion } from "@/lib/domain/types";
 import { DetailsForm } from "./details-form";
 import type { PanelTab, SongPatch } from "./editor-reducer";
 import { NotesEditor } from "./notes-editor";
+import { RecordingsPanel } from "./recordings-panel";
 import { VersionList } from "./version-list";
 
 interface ContextPanelProps {
   song: Song;
   versions: SongVersion[];
+  recordings: SongRecording[];
   tab: PanelTab;
   onTabChange: (tab: PanelTab) => void;
   onPatch: (patch: SongPatch) => void;
@@ -21,10 +23,11 @@ const TABS: Array<{ value: PanelTab; label: string }> = [
   { value: "details", label: "Details" },
   { value: "notes", label: "Notes" },
   { value: "versions", label: "Versions" },
+  { value: "recordings", label: "Takes" },
 ];
 
 /** Right-hand panel content. Rendered in a sidebar on desktop and a sheet on mobile. */
-export function ContextPanel({ song, versions, tab, onTabChange, onPatch, onCreateVersion, onRestoreVersion }: ContextPanelProps) {
+export function ContextPanel({ song, versions, recordings, tab, onTabChange, onPatch, onCreateVersion, onRestoreVersion }: ContextPanelProps) {
   return (
     <Tabs value={tab} onValueChange={(value) => onTabChange(value as PanelTab)} className="flex h-full flex-col gap-0">
       <div className="border-b px-3 pt-3 pb-0">
@@ -45,6 +48,9 @@ export function ContextPanel({ song, versions, tab, onTabChange, onPatch, onCrea
         </TabsContent>
         <TabsContent value="versions" className="mt-0">
           <VersionList versions={versions} onCreate={onCreateVersion} onRestore={onRestoreVersion} />
+        </TabsContent>
+        <TabsContent value="recordings" className="mt-0">
+          <RecordingsPanel songId={song.id} recordings={recordings} />
         </TabsContent>
       </div>
     </Tabs>

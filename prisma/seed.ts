@@ -8,7 +8,7 @@
  * app's `server-only` modules load outside Next.js).
  */
 import "dotenv/config";
-import { hashPassword } from "better-auth/crypto";
+import { createCredentialUser } from "../src/lib/auth-users";
 import { db } from "../src/lib/db";
 import { seedDemoContent } from "../src/lib/demo/seed";
 
@@ -22,27 +22,8 @@ async function main() {
     console.log("Removed previous seed account.");
   }
 
-  const userId = crypto.randomUUID();
-  const user = await db.user.create({
-    data: {
-      id: userId,
-      email: EMAIL,
-      name: "Sam Rivera",
-      emailVerified: true,
-      lyricFont: "serif",
-      accounts: {
-        create: {
-          id: crypto.randomUUID(),
-          providerId: "credential",
-          // Better Auth looks up credential accounts by accountId === user.id.
-          accountId: userId,
-          password: await hashPassword(PASSWORD),
-        },
-      },
-    },
-  });
-
-  await seedDemoContent(db, user.id);
+  const userId = await createCredentialUser(db, { email: EMAIL, password: PASSWORD, name: "Sam Rivera" });
+  await seedDemoContent(db, userId);
   console.log(`Seeded ${EMAIL} (password: ${PASSWORD})`);
 }
 

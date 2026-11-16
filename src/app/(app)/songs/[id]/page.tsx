@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SongEditor } from "@/components/editor/song-editor";
+import { listRecordings } from "@/lib/recordings/queries";
 import { requireUser } from "@/lib/session";
 import { getSongWithSections, listSongVersions } from "@/lib/songs/queries";
 
@@ -26,10 +27,10 @@ export default async function SongPage({ params }: PageProps<"/songs/[id]">) {
   const user = await requireUser();
   const song = await getSongWithSections(user.id, id);
   if (!song) notFound();
-  const versions = await listSongVersions(user.id, id);
+  const [versions, recordings] = await Promise.all([listSongVersions(user.id, id), listRecordings(user.id, id)]);
 
   // Keyed by id only: a save revalidates this route, which re-renders the page
   // with a new revision, but the editor must keep its client state (and the
   // user's in-flight typing) rather than remount from the server copy.
-  return <SongEditor key={song.id} song={song} versions={versions} />;
+  return <SongEditor key={song.id} song={song} versions={versions} recordings={recordings} />;
 }

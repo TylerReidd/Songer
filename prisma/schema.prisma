@@ -133,6 +133,7 @@ model Song {
   sections      SongSection[]
   versions      SongVersion[]
   ideas         Idea[]
+  recordings    SongRecording[]
 
   @@index([ownerId, updatedAt(sort: Desc)])
   @@index([ownerId, status])
@@ -170,6 +171,23 @@ model SongVersion {
 
   @@index([songId, createdAt(sort: Desc)])
   @@map("song_version")
+}
+
+/// A short voice memo kept with the song. The audio bytes live in `data`;
+/// lib/recordings/storage.ts is the only module that reads or writes them.
+model SongRecording {
+  id         String   @id @default(cuid())
+  songId     String
+  song       Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  name       String
+  mimeType   String
+  durationMs Int
+  sizeBytes  Int
+  data       Bytes
+  createdAt  DateTime @default(now())
+
+  @@index([songId, createdAt(sort: Desc)])
+  @@map("song_recording")
 }
 
 model Idea {

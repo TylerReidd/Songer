@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 /** Version snapshots and restore, against the real database with a mocked session. */
 
-const currentUser = { id: "", email: "", name: "Test", lyricFont: "serif" as const, createdAt: new Date() };
+const currentUser = { id: "", email: "", name: "Test", lyricFont: "serif" as const, isDemo: false, createdAt: new Date() };
 vi.mock("@/lib/session", () => ({
   requireUser: async () => currentUser,
   getSessionUser: async () => currentUser,

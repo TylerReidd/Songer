@@ -7,7 +7,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
  * below the session (Zod validation, Prisma queries, cascade rules) is real.
  */
 
-const currentUser = { id: "", email: "", name: "Test", lyricFont: "serif" as const, createdAt: new Date() };
+const currentUser = { id: "", email: "", name: "Test", lyricFont: "serif" as const, isDemo: false, createdAt: new Date() };
 
 vi.mock("@/lib/session", () => ({
   requireUser: async () => currentUser,
