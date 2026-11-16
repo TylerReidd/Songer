@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/shared/logo";
 import { Button } from "@/components/ui/button";
+import { SITE } from "@/lib/site";
 
 const NAV_LINKS = [
   { label: "Features", href: "/#features" },
@@ -45,7 +46,7 @@ export default function MarketingLayout({ children }: LayoutProps<"/">) {
               and ready when you are.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-8 text-sm sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-8 text-sm sm:grid-cols-4">
             <div>
               <h2 className="mb-3 text-xs font-semibold tracking-wider text-text-muted uppercase">Product</h2>
               <ul className="space-y-2 text-text-secondary">
@@ -65,7 +66,7 @@ export default function MarketingLayout({ children }: LayoutProps<"/">) {
               <h2 className="mb-3 text-xs font-semibold tracking-wider text-text-muted uppercase">Project</h2>
               <ul className="space-y-2 text-text-secondary">
                 <li>
-                  <a className="hover:text-foreground" href="https://github.com" rel="noreferrer" target="_blank">
+                  <a className="hover:text-foreground" href={SITE.sourceUrl} rel="noreferrer" target="_blank">
                     Source code
                   </a>
                 </li>
@@ -74,6 +75,13 @@ export default function MarketingLayout({ children }: LayoutProps<"/">) {
                     Built with Next.js
                   </a>
                 </li>
+              </ul>
+            </div>
+            <div>
+              <h2 className="mb-3 text-xs font-semibold tracking-wider text-text-muted uppercase">Legal</h2>
+              <ul className="space-y-2 text-text-secondary">
+                <li><Link className="hover:text-foreground" href="/privacy">Privacy policy</Link></li>
+                <li><Link className="hover:text-foreground" href="/terms">Terms of use</Link></li>
               </ul>
             </div>
           </div>

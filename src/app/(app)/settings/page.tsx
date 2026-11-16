@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { DeleteAccount } from "@/components/settings/delete-account";
 import { LyricFontPreference } from "@/components/settings/lyric-font-preference";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { SignOutButton } from "@/components/settings/sign-out-button";
@@ -51,6 +52,15 @@ export default async function SettingsPage() {
               </dd>
             </div>
           </dl>
+        </SettingsSection>
+        <SettingsSection title="Danger zone" description="Permanent actions.">
+          {user.isDemo ? (
+            <p className="rounded-lg border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
+              Demo workspaces are deleted automatically 24 hours after they are created.
+            </p>
+          ) : (
+            <DeleteAccount />
+          )}
         </SettingsSection>
       </div>
     </div>

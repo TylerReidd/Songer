@@ -59,7 +59,8 @@ New accounts must confirm their email before the first sign-in. Without SMTP
 credentials in `.env` the confirmation and password-reset emails are printed
 to the `next dev` terminal, so you can click the link from there. To send real
 email, fill in `SMTP_USER` and `SMTP_PASS` (a Gmail address and an App Password
-is enough; see `.env.example`).
+is enough; see `.env.example`). `NEXT_PUBLIC_CONTACT_EMAIL` is shown on the
+privacy and terms pages as the way to reach you about data.
 
 Other scripts:
 

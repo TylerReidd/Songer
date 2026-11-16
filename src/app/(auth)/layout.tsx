@@ -10,10 +10,10 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm">{children}</div>
       </main>
-      <footer className="px-4 py-6 text-center text-xs text-text-muted">
-        <Link href="/" className="hover:text-text-secondary">
-          Back to songbook.app
-        </Link>
+      <footer className="flex justify-center gap-4 px-4 py-6 text-xs text-text-muted">
+        <Link href="/" className="hover:text-text-secondary">Home</Link>
+        <Link href="/privacy" className="hover:text-text-secondary">Privacy</Link>
+        <Link href="/terms" className="hover:text-text-secondary">Terms</Link>
       </footer>
     </div>
   );

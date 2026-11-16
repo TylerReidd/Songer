@@ -152,6 +152,13 @@ export function AuthForm({ mode }: AuthFormProps) {
           {pending && <Loader2 className="animate-spin" data-icon="inline-start" />}
           {isSignUp ? "Create account" : "Sign in"}
         </Button>
+        {isSignUp && (
+          <p className="text-center text-xs text-text-muted">
+            By creating an account you agree to the{" "}
+            <Link href="/terms" className="underline hover:text-text-secondary">terms</Link> and{" "}
+            <Link href="/privacy" className="underline hover:text-text-secondary">privacy policy</Link>.
+          </p>
+        )}
       </form>
 
       <div className="my-5 flex items-center gap-3 text-xs text-text-muted">

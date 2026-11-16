@@ -133,6 +133,21 @@ Phase 2 mirrors them one to one.
   console; in production it throws, so a misconfigured deploy fails loudly.
   `AUTH_TEST_MODE=on`, set only by the Playwright web server, turns off
   verification and rate limiting so tests can sign up without a mailbox.
+- Users delete their own account from Settings. Better Auth re-checks the
+  password and deletes the user row; the `onDelete: Cascade` relations in
+  the schema remove sessions, songs, versions, takes, and ideas in the same
+  statement. Demo accounts are excluded (the cron removes them).
+- `next.config.ts` sends security headers on every response: a Content
+  Security Policy that limits scripts, connections, fonts, and media to this
+  origin and forbids framing, plus HSTS, `nosniff`, a referrer policy, and a
+  Permissions-Policy that allows the microphone only for this origin. The
+  CSP keeps `'unsafe-inline'` for scripts because Next.js emits inline
+  bootstrap scripts; a nonce-based policy would need a per-request nonce
+  and would make every page dynamic, losing the static shell.
+- `/privacy` and `/terms` are static pages in the marketing group, linked
+  from the footer, the auth pages, and the sign-up form. They are written to
+  match what the app actually does (one cookie, no analytics, delete from
+  Settings) so they stay true without maintenance.
 - The seed and "Try the demo" create accounts directly through
   `lib/auth-users.ts` (already verified, credential row hashed with Better
   Auth's own function) rather than the public sign-up, so no mail goes to

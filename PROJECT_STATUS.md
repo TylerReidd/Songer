@@ -43,7 +43,21 @@ autosave with revision checks, ideas, settings) plus:
   it), and "Forgot password?" on the sign-in page emails a one-hour reset
   link that revokes other sessions. Email goes out over SMTP through
   `lib/email.ts` (Gmail App Password works; nothing to pay for) and is
-  printed to the dev console when no credentials are set.
+  printed to the dev console when no credentials are set. Verified end to
+  end with real Gmail delivery on 2026-11-16.
+- **Account deletion:** a "Danger zone" in Settings deletes the account after
+  re-entering the password; PostgreSQL cascades remove everything owned.
+- **Security headers:** Content Security Policy (same-origin scripts,
+  connections, fonts, media; no framing), HSTS, nosniff, referrer policy,
+  and a Permissions-Policy that keeps the microphone for this origin only.
+  Verified on the production server with no policy violations across the
+  landing, legal, sign-in, dashboard, editor (chord playback, recording,
+  playback), and settings pages.
+- **Privacy policy and terms of use** at `/privacy` and `/terms`, linked
+  from the footer, the auth pages, and the sign-up form. Set
+  `NEXT_PUBLIC_CONTACT_EMAIL` so they show a contact address.
+- **Dependency audit:** `npm audit --omit=dev` reports 0 vulnerabilities
+  (the shadcn CLI moved to devDependencies; it never ships to users).
 
 ## Checks run for Phase 3
 
@@ -53,7 +67,7 @@ autosave with revision checks, ideas, settings) plus:
 | `npm run lint` | Pass, 0 warnings |
 | `npm run build` | Pass |
 | `npm test` (Vitest) | **45 of 45 pass** across 7 files: music theory, section ordering, library filters, editor reducer, ownership integration (10), versions integration (3), recordings integration (5: owner save with MIME normalization, stranger/format/size/duration rejected, per-song cap, owner-only rename and delete, cascade on song delete) |
-| `npm run test:e2e` (Playwright, production build, fake microphone) | **7 of 7 pass**: anonymous redirect; sign-up → song → lyrics → chords → play → Saved → reload → library; versions save/restore with recovery entry; record 1.5 s → "Recording saved" → stream responds 200 with an audio content type → rename → delete; cross-user isolation; wrong password; forgot-password request and expired reset link |
+| `npm run test:e2e` (Playwright, production build, fake microphone) | **8 of 8 pass**: anonymous redirect; sign-up → song → lyrics → chords → play → Saved → reload → library; versions save/restore with recovery entry; record 1.5 s → "Recording saved" → stream responds 200 with an audio content type → rename → delete; cross-user isolation; wrong password; forgot-password request and expired reset link; account deletion with wrong then right password, then sign-in refused |
 
 A unit test caught one bug before it shipped: lowercase key strings ("e minor")
 failed to parse, which would have hidden the diatonic suggestions.
@@ -97,6 +111,10 @@ reused link shows "Link expired", and "Try the demo" still works.
   (versions capture the writing; takes are attachments).
 - A recording interrupted by closing the tab is lost; only completed takes
   upload.
+- The legal pages are an engineer's draft, not legal advice; have them
+  reviewed if the app ever charges money or collects more than it does now.
+- No data export yet (the privacy policy promises it on request, by hand).
+- No error monitoring; Sentry's free tier is the usual next step.
 - Email is sent from a personal Gmail address until the project has a domain;
   swapping to Resend or similar is a change inside `lib/email.ts` only.
 - No "resend confirmation" button; signing in again with the same password

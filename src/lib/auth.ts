@@ -61,6 +61,9 @@ export const auth = betterAuth({
     cookieCache: { enabled: true, maxAge: 60 * 5 },
   },
   user: {
+    // Users delete their own account from Settings; the password is re-checked
+    // and PostgreSQL cascades remove songs, versions, takes, and ideas.
+    deleteUser: { enabled: true },
     additionalFields: {
       lyricFont: { type: "string", required: false, defaultValue: "serif", input: false },
       isDemo: { type: "boolean", required: false, defaultValue: false, input: false },

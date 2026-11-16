@@ -145,3 +145,31 @@ test("forgot password: request a reset link from the sign-in page", async ({ pag
   await page.goto("/reset-password?error=INVALID_TOKEN");
   await expect(page.getByRole("heading", { name: "Link expired" })).toBeVisible();
 });
+
+test("delete account removes the user and their songs", async ({ page }) => {
+  const email = `e2e-delete-${Date.now()}@test.local`;
+  await page.goto("/sign-up");
+  await page.fill("#email", email);
+  await page.fill("#password", "password123");
+  await page.click("button[type=submit]");
+  await page.waitForURL("**/dashboard");
+  await page.getByRole("button", { name: "New song" }).first().click();
+  await page.waitForURL(/\/songs\/[a-z0-9]+$/);
+
+  await page.goto("/settings");
+  await page.getByRole("button", { name: "Delete…" }).click();
+  const dialog = page.getByRole("alertdialog");
+  await dialog.getByLabel("Password").fill("wrong-password");
+  await dialog.getByRole("button", { name: "Delete everything" }).click();
+  await expect(page.getByText("That password is not correct.")).toBeVisible();
+  await dialog.getByLabel("Password").fill("password123");
+  await dialog.getByRole("button", { name: "Delete everything" }).click();
+  await page.waitForURL(/\/$/);
+
+  // The credentials no longer work and the protected area is closed.
+  await page.goto("/sign-in");
+  await page.fill("#email", email);
+  await page.fill("#password", "password123");
+  await page.click("button[type=submit]");
+  await expect(page.getByRole("alert")).toBeVisible();
+});
